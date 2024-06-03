@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -37,7 +38,7 @@ typedef DecoderGetBlockBytesDart = int Function();
 typedef DecoderGetFrameSamplesC = Int32 Function();
 typedef DecoderGetFrameSamplesDart = int Function();
 
-class LC3WrapperDecoder {
+class LC3DecoderBinding {
   bool _isInitialized = false;
   late final DynamicLibrary _lc3Internal;
   late final DecoderInitDart _decoderInit;
@@ -51,24 +52,39 @@ class LC3WrapperDecoder {
   Pointer<Int16> _decodedData = nullptr;
   int _decodedDataSize = 0;
 
-  LC3WrapperDecoder._private();
+  LC3DecoderBinding._private();
 
-  static final LC3WrapperDecoder _instance = LC3WrapperDecoder._private();
+  static final LC3DecoderBinding _instance = LC3DecoderBinding._private();
 
-  static LC3WrapperDecoder get instance => _instance;
+  static LC3DecoderBinding get instance => _instance;
 
   void checkInitialized() {
     if (!_isInitialized) {
-      throw Exception("LC3WrapperDecoder is not initialized");
+      throw Exception("LC3DecoderBinding is not initialized");
     }
   }
 
-  Future<void> initialize(String assetPath) async {
+  void initialize() {
     if (_isInitialized) {
       return;
     }
 
-    _lc3Internal = DynamicLibrary.open(assetPath);
+    const String libName = 'liblc3_dart_plugin';
+
+    /// The dynamic library in which the symbols for [Liblc3DartPluginBindings] can be found.
+    _lc3Internal = () {
+      if (Platform.isMacOS || Platform.isIOS) {
+        return DynamicLibrary.open('$libName.framework/$libName');
+      }
+      if (Platform.isAndroid || Platform.isLinux) {
+        return DynamicLibrary.open('lib$libName.so');
+      }
+      if (Platform.isWindows) {
+        return DynamicLibrary.open('$libName.dll');
+      }
+      throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
+    }();
+
     _decoderInit = _lc3Internal
         .lookupFunction<DecoderInitC, DecoderInitDart>("decoder_init");
     _decoderDecode = _lc3Internal
@@ -130,40 +146,40 @@ class LC3WrapperDecoder {
 
   void _assertDecoderResult(int result) {
     if (result != 0) {
-      throw LC3WrapperDecoderError(LC3DecoderError.fromValue(result));
+      throw LC3DecoderBindingError(LC3DecoderError.fromValue(result));
     }
   }
 }
 
-abstract class LC3WrapperDecoderException implements Exception {
+abstract class LC3DecoderBindingException implements Exception {
   final String message;
 
-  LC3WrapperDecoderException(this.message);
+  LC3DecoderBindingException(this.message);
 
   @override
   String toString() {
-    return "LC3WrapperDecoderException: $message";
+    return "LC3DecoderBindingException: $message";
   }
 }
 
-class LC3WrapperDecoderNotInitializedException
-    extends LC3WrapperDecoderException {
-  LC3WrapperDecoderNotInitializedException()
-      : super("LC3WrapperDecoder is not initialized");
+class LC3DecoderBindingNotInitializedException
+    extends LC3DecoderBindingException {
+  LC3DecoderBindingNotInitializedException()
+      : super("LC3DecoderBinding is not initialized");
 }
 
-class LC3WrapperDecoderDynamicLibraryOpenException
-    extends LC3WrapperDecoderException {
-  LC3WrapperDecoderDynamicLibraryOpenException(String path)
+class LC3DecoderBindingDynamicLibraryOpenException
+    extends LC3DecoderBindingException {
+  LC3DecoderBindingDynamicLibraryOpenException(String path)
       : super("Failed to open dynamic library at path: $path");
 }
 
-class LC3WrapperDecoderFunctionLookupException
-    extends LC3WrapperDecoderException {
-  LC3WrapperDecoderFunctionLookupException(String functionName)
+class LC3DecoderBindingFunctionLookupException
+    extends LC3DecoderBindingException {
+  LC3DecoderBindingFunctionLookupException(String functionName)
       : super("Failed to lookup function: $functionName");
 }
 
-class LC3WrapperDecoderError extends LC3WrapperDecoderException {
-  LC3WrapperDecoderError(LC3DecoderError error) : super("Error: $error");
+class LC3DecoderBindingError extends LC3DecoderBindingException {
+  LC3DecoderBindingError(LC3DecoderError error) : super("Error: $error");
 }
