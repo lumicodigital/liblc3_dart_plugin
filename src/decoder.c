@@ -119,7 +119,7 @@ int decoder_get_block_bytes(){
         decoder.frame_us,
         decoder.sample_rate,
         decoder.num_channels,
-        decoder.sample_rate
+        decoder.bit_rate
     );
 }
 
