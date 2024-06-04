@@ -23,8 +23,8 @@ enum LC3DecoderError {
   }
 }
 
-typedef DecoderInitC = Int32 Function(Uint8, Uint8, Uint32, Uint16);
-typedef DecoderInitDart = int Function(int, int, int, int);
+typedef DecoderInitC = Int32 Function(Uint8, Uint8, Uint32, Uint16, Uint32);
+typedef DecoderInitDart = int Function(int, int, int, int, int);
 
 typedef DecoderDecodeC = Int32 Function(Pointer<Uint8>, Pointer<Int16>);
 typedef DecoderDecodeDart = int Function(Pointer<Uint8>, Pointer<Int16>);
@@ -102,13 +102,15 @@ class LC3DecoderBinding {
   int get encodedDataSize => _encodedDataSize;
   int get decodedDataSize => _decodedDataSize;
 
-  void decoderInit(int sampleRate, int channels, int frameSize, int bitDepth) {
+  void decoderInit(
+      int sampleRate, int channels, int frameSize, int bitDepth, int bitRate) {
     checkInitialized();
     _assertDecoderResult(_decoderInit(
       bitDepth,
       channels,
       sampleRate,
       frameSize,
+      bitRate,
     ));
     if (_encodedData != nullptr) {
       calloc.free(_encodedData);
