@@ -1,7 +1,6 @@
 #include "lc3.h"
 #include "decoder.h"
 #include <stdlib.h>
-#include <android/log.h>
 
 static bool _initialized = false;
 
@@ -56,22 +55,16 @@ lc3_decoder_err_t decoder_init(
     decoder.sample_rate = sample_rate;
     decoder.frame_us = frame_us;
     decoder.bit_rate = bit_rate;
-    __android_log_print(ANDROID_LOG_INFO,
-                        "flutter",
-                        "Initializing decoder with bit depth: %u, num channels: %u, sample rate: %lu, frame duration: %u, bit rate: %lu",
-                        bit_depth, num_channels, sample_rate, frame_us, bit_rate);
 
     void * mem = malloc(lc3_hr_decoder_size(false, frame_us, sample_rate));
     if(!mem) {
-        __android_log_print(ANDROID_LOG_INFO, "flutter", "Couldn't allocate memory from heap");
         return LC3_DECODER_MEMORY_ERROR;
     }
 
     decoder.lc3_dec = lc3_hr_setup_decoder(false, frame_us, sample_rate, 0, mem);
     if(!decoder.lc3_dec){
         free(mem);
-        __android_log_print(ANDROID_LOG_INFO, "flutter", "Couldn't setup decoder");
-        return LC3_DECODER_MEMORY_ERROR;
+        return LC3_DECODER_INTERNAL_ERROR;
     }
     _initialized = true;
 
@@ -94,17 +87,11 @@ lc3_decoder_err_t decoder_decode(const uint8_t* frame_buffer, int16_t* decoded_d
     if(!frame_buffer || !decoded_data) return LC3_DECODER_INVALID_PARAMS;
 
     int frame_samples = lc3_hr_frame_samples(false, decoder.frame_us, decoder.sample_rate);
-    int block_bytes = lc3_hr_frame_block_bytes(
-        false,
-        decoder.frame_us,
-        decoder.sample_rate,
-        decoder.num_channels,
-        decoder.bit_depth
-    );
+    int block_bytes = decoder_get_block_bytes();
     if(block_bytes < 0 || frame_samples < 0) return LC3_DECODER_INTERNAL_ERROR;
 
-    enum lc3_pcm_format fmt = decoder.bit_depth == 24 ? LC3_PCM_FORMAT_S16 : LC3_PCM_FORMAT_S24_3LE;
-    int ret = lc3_decode(decoder.lc3_dec, frame_buffer, block_bytes, fmt, decoded_data, 1);
+    enum lc3_pcm_format fmt = decoder.bit_depth == 24 ? LC3_PCM_FORMAT_S24_3LE : LC3_PCM_FORMAT_S16;
+    int ret = lc3_decode(decoder.lc3_dec, frame_buffer, block_bytes, fmt, decoded_data, decoder.num_channels);
     if(ret < 0) return LC3_DECODER_INTERNAL_ERROR;
 
     return LC3_DECODER_OK;
