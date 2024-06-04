@@ -122,11 +122,13 @@ class LC3DecoderBinding {
     _decodedData = calloc<Int16>(_decodedDataSize ~/ 2);
   }
 
-  Uint8List decoderDecode(Iterable<int> encodedData) {
+  Int16List decoderDecode(Iterable<int> encodedData) {
     checkInitialized();
     _encodedData.asTypedList(_encodedDataSize).setAll(0, encodedData);
     _assertDecoderResult(_decoderDecode(_encodedData, _decodedData));
-    return _decodedData.asTypedList(_decodedDataSize ~/ 2).buffer.asUint8List();
+    final result = Int16List(_decodedDataSize ~/ 2);
+    result.setAll(0, _decodedData.asTypedList(_decodedDataSize ~/ 2));
+    return result;
   }
 
   void decoderDestroy() {
