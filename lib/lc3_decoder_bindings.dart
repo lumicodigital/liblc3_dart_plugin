@@ -105,10 +105,10 @@ class LC3DecoderBinding {
   void decoderInit(int sampleRate, int channels, int frameSize, int bitDepth) {
     checkInitialized();
     _assertDecoderResult(_decoderInit(
-      sampleRate,
-      channels,
-      frameSize,
       bitDepth,
+      channels,
+      sampleRate,
+      frameSize,
     ));
     if (_encodedData != nullptr) {
       calloc.free(_encodedData);
