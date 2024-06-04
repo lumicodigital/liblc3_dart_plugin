@@ -5,6 +5,14 @@ cmake_minimum_required(VERSION 3.12)
 
 project(liblc3_dart_plugin_library VERSION 0.0.1 LANGUAGES C)
 
+find_library( # Defines the name of the path variable that stores the
+        # location of the NDK library.
+        log-lib
+
+        # Specifies the name of the NDK library that
+        # CMake needs to locate.
+        log )
+
 set(liblc3_root ${CMAKE_CURRENT_LIST_DIR}/../liblc3)
 set(liblc3_src ${liblc3_root}/src)
 set(liblc3_include ${liblc3_root}/include)
@@ -22,19 +30,21 @@ set(liblc3_srcs ${liblc3_src}/attdet.c
         ${liblc3_src}/tns.c)
 
 add_library(liblc3_dart_plugin SHARED
-    ${liblc3_srcs}
-    "decoder.c"
+        ${liblc3_srcs}
+        "decoder.c"
 )
 
 # Specify private include directories
 target_include_directories(liblc3_dart_plugin PRIVATE
-    ${liblc3_include}
+        ${liblc3_include}
 )
 
 set_target_properties(liblc3_dart_plugin PROPERTIES
-  PUBLIC_HEADER decoder.h
-  OUTPUT_NAME "liblc3_dart_plugin"
+        PUBLIC_HEADER decoder.h
+        OUTPUT_NAME "liblc3_dart_plugin"
 )
+
+target_link_libraries(liblc3_dart_plugin ${log-lib})
 
 target_compile_definitions(liblc3_dart_plugin PUBLIC DART_SHARED_LIB)
 

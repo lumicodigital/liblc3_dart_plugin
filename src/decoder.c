@@ -10,6 +10,7 @@ struct Decoder{
     uint8_t num_channels;
     uint32_t sample_rate;
     uint16_t frame_us;
+    uint32_t bit_rate;
     lc3_decoder_t lc3_dec;
 } decoder;
 
@@ -17,24 +18,48 @@ struct Decoder{
   * Initialize the decoder with the given parameters.
   * This function allocates some resources on the heap.
   * decoder_destroy() should be called to free these resources and avoid memory leaks.
-  * Calling the function more than once, before calling decoder_destroy(), will have no effect.
   *
   * bit_depth: The bit depth of the input audio.
-  * num_channels: The number of channels in the input audio.
+  *     Accepted values are 16, 24
+  * num_channels: The number of channels in the input audio. Currently only supports 1 channel.
+  *     If num_channels is not 1, LC3_DECODER_INVALID_PARAMS will be returned.
   * sample_rate: The sample rate of the input audio.
+  *     Accepted values are 8000, 16000, 24000, 32000, 48000
   * frame_us: The frame duration in microseconds.
+  *     Accepted values are 2500, 5000, 7500, 10000
   *
   * Returns LC3_DECODER_OK on success, otherwise an error code.
 */
-lc3_decoder_err_t decoder_init(uint8_t bit_depth, uint8_t num_channels, uint32_t sample_rate, uint16_t frame_us){
+lc3_decoder_err_t decoder_init(
+        uint8_t bit_depth,
+        uint8_t num_channels,
+        uint32_t sample_rate,
+        uint16_t frame_us,
+        uint32_t bit_rate){
     if(_initialized){
         return LC3_DECODER_OK;
+    }
+    if(bit_depth != 16 && bit_depth != 24){
+        return LC3_DECODER_INVALID_PARAMS;
+    }
+    if (num_channels != 1){
+        return LC3_DECODER_INVALID_PARAMS;
+    }
+    if(sample_rate != 8000 && sample_rate != 16000 && sample_rate != 24000 && sample_rate != 32000 && sample_rate != 48000){
+        return LC3_DECODER_INVALID_PARAMS;
+    }
+    if(frame_us != 2500 && frame_us != 5000 && frame_us != 7500 && frame_us != 10000){
+        return LC3_DECODER_INVALID_PARAMS;
     }
     decoder.bit_depth = bit_depth;
     decoder.num_channels = num_channels;
     decoder.sample_rate = sample_rate;
     decoder.frame_us = frame_us;
-    __android_log_print(ANDROID_LOG_INFO, "flutter", "Initializing decoder with bit depth: %u, num channels: %u, sample rate: %lu, frame duration: %u", bit_depth, num_channels, sample_rate, frame_us);
+    decoder.bit_rate = bit_rate;
+    __android_log_print(ANDROID_LOG_INFO,
+                        "flutter",
+                        "Initializing decoder with bit depth: %u, num channels: %u, sample rate: %lu, frame duration: %u, bit rate: %lu",
+                        bit_depth, num_channels, sample_rate, frame_us, bit_rate);
 
     void * mem = malloc(lc3_hr_decoder_size(false, frame_us, sample_rate));
     if(!mem) {
@@ -69,7 +94,13 @@ lc3_decoder_err_t decoder_decode(const uint8_t* frame_buffer, int16_t* decoded_d
     if(!frame_buffer || !decoded_data) return LC3_DECODER_INVALID_PARAMS;
 
     int frame_samples = lc3_hr_frame_samples(false, decoder.frame_us, decoder.sample_rate);
-    int block_bytes = lc3_hr_frame_block_bytes(false, decoder.frame_us, decoder.sample_rate, 1, decoder.bit_depth);
+    int block_bytes = lc3_hr_frame_block_bytes(
+        false,
+        decoder.frame_us,
+        decoder.sample_rate,
+        decoder.num_channels,
+        decoder.bit_depth
+    );
     if(block_bytes < 0 || frame_samples < 0) return LC3_DECODER_INTERNAL_ERROR;
 
     enum lc3_pcm_format fmt = decoder.bit_depth == 24 ? LC3_PCM_FORMAT_S16 : LC3_PCM_FORMAT_S24_3LE;
@@ -83,7 +114,13 @@ lc3_decoder_err_t decoder_decode(const uint8_t* frame_buffer, int16_t* decoded_d
   * Returns the number of bytes in the frame block.
 */
 int decoder_get_block_bytes(){
-    return lc3_hr_frame_block_bytes(false, decoder.frame_us, decoder.sample_rate, 1, decoder.bit_depth);
+    return lc3_hr_frame_block_bytes(
+        false,
+        decoder.frame_us,
+        decoder.sample_rate,
+        decoder.num_channels,
+        decoder.sample_rate
+    );
 }
 
 /*
