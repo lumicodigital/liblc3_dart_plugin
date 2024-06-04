@@ -28,7 +28,7 @@ add_library(liblc3_dart_plugin SHARED
 
 # Specify private include directories
 target_include_directories(liblc3_dart_plugin PRIVATE
-        ${CMAKE_SOURCE_DIR}/liblc3/include
+    ${liblc3_include}
 )
 
 set_target_properties(liblc3_dart_plugin PROPERTIES
