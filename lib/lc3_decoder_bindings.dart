@@ -26,8 +26,8 @@ enum LC3DecoderError {
 typedef DecoderInitC = Int32 Function(Uint8, Uint8, Uint32, Uint16, Uint32);
 typedef DecoderInitDart = int Function(int, int, int, int, int);
 
-typedef DecoderDecodeC = Int32 Function(Pointer<Uint8>, Pointer<Int16>);
-typedef DecoderDecodeDart = int Function(Pointer<Uint8>, Pointer<Int16>);
+typedef DecoderDecodeC = Int32 Function(Pointer<Uint8>, Pointer<Uint8>);
+typedef DecoderDecodeDart = int Function(Pointer<Uint8>, Pointer<Uint8>);
 
 typedef DecoderDestroyC = Void Function();
 typedef DecoderDestroyDart = void Function();
@@ -49,7 +49,7 @@ class LC3DecoderBinding {
 
   Pointer<Uint8> _encodedData = nullptr;
   int _encodedDataSize = 0;
-  Pointer<Int16> _decodedData = nullptr;
+  Pointer<Uint8> _decodedData = nullptr;
   int _decodedDataSize = 0;
 
   LC3DecoderBinding._private();
@@ -121,15 +121,15 @@ class LC3DecoderBinding {
     _encodedDataSize = _decoderGetBlockBytes();
     _encodedData = calloc<Uint8>(_encodedDataSize);
     _decodedDataSize = _decoderGetFrameSamples() * channels * bitDepth ~/ 8;
-    _decodedData = calloc<Int16>(_decodedDataSize ~/ 2);
+    _decodedData = calloc<Uint8>(_decodedDataSize);
   }
 
-  Int16List decoderDecode(Iterable<int> encodedData) {
+  Uint8List decoderDecode(Iterable<int> encodedData) {
     checkInitialized();
     _encodedData.asTypedList(_encodedDataSize).setAll(0, encodedData);
     _assertDecoderResult(_decoderDecode(_encodedData, _decodedData));
-    final result = Int16List(_decodedDataSize ~/ 2);
-    result.setAll(0, _decodedData.asTypedList(_decodedDataSize ~/ 2));
+    final result = Uint8List(_decodedDataSize);
+    result.setAll(0, _decodedData.asTypedList(_decodedDataSize));
     return result;
   }
 

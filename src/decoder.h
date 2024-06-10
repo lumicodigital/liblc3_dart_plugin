@@ -34,7 +34,7 @@ typedef enum {
   * decoder_destroy() should be called to free these resources and avoid memory leaks.
   * 
   * bit_depth: The bit depth of the input audio.
-  *     Accepted values are 16, 24
+  *     Accepted values are 16, 24, 32
   * num_channels: The number of channels in the input audio. Currently only supports 1 channel.
   *     If num_channels is not 1, LC3_DECODER_INVALID_PARAMS will be returned.
   * sample_rate: The sample rate of the input audio.
@@ -57,7 +57,7 @@ lc3_decoder_err_t decoder_init(uint8_t bit_depth, uint8_t num_channels, uint32_t
   * 
   * Returns LC3_DECODER_OK on success, otherwise an error code.
 */
-lc3_decoder_err_t decoder_decode(const uint8_t* frame_buffer, int16_t* decoded_data);
+lc3_decoder_err_t decoder_decode(const uint8_t* frame_buffer, uint8_t* decoded_data);
 
 /*
   * Returns the number of bytes in the frame block.
